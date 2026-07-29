@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>zh_CN</string>
+    <key>CFBundleDisplayName</key>
+    <string>YD E-Bike Helper</string>
+    <key>CFBundleExecutable</key>
+    <string>yd-ebike-helper</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+    <key>CFBundleIdentifier</key>
+    <string>io.github.cbdtjwt.ydebikehelper</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>YD E-Bike Helper</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>13.0</string>
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>用于扫描、连接并调试您选择的 YD BLE 设备。</string>
+    <key>NSBluetoothPeripheralUsageDescription</key>
+    <string>用于扫描、连接并调试您选择的 YD BLE 设备。</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+</dict>
+</plist>
