@@ -59,6 +59,10 @@ html {
   scroll-behavior: smooth;
 }
 
+section[id] {
+  scroll-margin-top: 72px;
+}
+
 body {
   margin: 0;
   background: var(--page);
