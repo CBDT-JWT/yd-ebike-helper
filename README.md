@@ -6,6 +6,8 @@
 
 `YD E-Bike Helper` 是一款运行于 macOS 的雅迪（YADEA）电动车 BLE 蓝牙调试工具，可用于发现设备、建立连接、查看通信日志以及发送常用调试指令。
 
+[软件主页](https://cbdt-jwt.github.io/yd-ebike-helper/) · [下载最新版](https://github.com/CBDT-JWT/yd-ebike-helper/releases/latest)
+
 > 本项目是独立开发的非官方工具，与雅迪科技集团有限公司无隶属或授权关系。请仅连接和调试属于自己或已获得明确授权的设备。
 
 ## 主要功能
