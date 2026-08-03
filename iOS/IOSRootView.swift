@@ -2,15 +2,20 @@ import SwiftUI
 
 struct IOSRootView: View {
     @EnvironmentObject private var bluetooth: BLEManager
+    @State private var navigationPath: [UUID] = []
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             DeviceDiscoveryView()
                 .navigationDestination(for: UUID.self) { deviceID in
                     IOSDeviceDetailView(deviceID: deviceID)
                 }
         }
         .tint(.blue)
+        .onAppear {
+            guard navigationPath.isEmpty, let deviceID = bluetooth.demoInitialDeviceID else { return }
+            navigationPath = [deviceID]
+        }
         .alert(
             "操作失败",
             isPresented: Binding(
@@ -275,22 +280,31 @@ private struct IOSDeviceDetailView: View {
     var body: some View {
         Group {
             if let device {
-                ScrollView {
-                    VStack(spacing: 14) {
-                        deviceHero(device)
-                        connectionCard(device)
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(spacing: 14) {
+                            deviceHero(device)
+                            connectionCard(device)
 
-                        if device.phase == .ready {
-                            powerControlCard
-                            volumeCard
+                            if device.phase == .ready {
+                                powerControlCard
+                                    .id("power-control")
+                                volumeCard
+                            }
+
+                            advancedCard(device)
+                            recentLogCard
                         }
-
-                        advancedCard(device)
-                        recentLogCard
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .padding(.bottom, 24)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .padding(.bottom, 24)
+                    .onAppear {
+                        guard bluetooth.demoScreen == "controls" else { return }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                            proxy.scrollTo("power-control", anchor: .top)
+                        }
+                    }
                 }
                 .background(Color(uiColor: .systemGroupedBackground))
                 .navigationTitle(device.name)
@@ -336,6 +350,11 @@ private struct IOSDeviceDetailView: View {
                 }
                 .onAppear {
                     loadSuggestedMAC()
+                    if bluetooth.demoScreen == "logs" {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                            showsLogs = true
+                        }
+                    }
                 }
                 .onChange(of: device.advertisement.macCandidates.first?.address) { _, _ in
                     loadSuggestedMAC()

@@ -12,6 +12,9 @@ final class BLEManager: NSObject, ObservableObject {
     @Published var minimumRSSI = -60
     @Published var lastError: String?
 
+    let isDemoMode: Bool
+    let demoScreen: String?
+
     private var central: CBCentralManager!
     private var peripherals: [UUID: CBPeripheral] = [:]
     private var scanStopWorkItem: DispatchWorkItem?
@@ -36,8 +39,27 @@ final class BLEManager: NSObject, ObservableObject {
     private var activeWrite: PendingWrite?
 
     override init() {
+        let arguments = ProcessInfo.processInfo.arguments
+        isDemoMode = arguments.contains("--demo-data")
+        if let screenIndex = arguments.firstIndex(of: "--demo-screen"),
+            arguments.indices.contains(screenIndex + 1)
+        {
+            demoScreen = arguments[screenIndex + 1]
+        } else {
+            demoScreen = nil
+        }
+
         super.init()
-        central = CBCentralManager(delegate: self, queue: .main)
+        if isDemoMode {
+            configureDemoData()
+        } else {
+            central = CBCentralManager(delegate: self, queue: .main)
+        }
+    }
+
+    var demoInitialDeviceID: UUID? {
+        guard isDemoMode, demoScreen != nil, demoScreen != "list" else { return nil }
+        return devices.first?.id
     }
 
     var visibleDevices: [DiscoveredDevice] {
@@ -82,6 +104,11 @@ final class BLEManager: NSObject, ObservableObject {
     }
 
     func refreshScan() {
+        if isDemoMode {
+            configureDemoData()
+            return
+        }
+
         if let peripheral = activePeripheral {
             updatePhase(.disconnecting, for: peripheral.identifier)
             central.cancelPeripheralConnection(peripheral)
@@ -92,6 +119,17 @@ final class BLEManager: NSObject, ObservableObject {
     }
 
     func startScan() {
+        if isDemoMode {
+            isScanning = true
+            appendLog(.system, "开始扫描 BLE 设备（演示数据）")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+                guard let self else { return }
+                self.isScanning = false
+                self.appendLog(.system, "扫描结束，发现 \(self.visibleDevices.count) 个匹配设备")
+            }
+            return
+        }
+
         guard central.state == .poweredOn else {
             lastError = bluetoothState
             appendLog(.error, "无法扫描：\(bluetoothState)")
@@ -115,6 +153,11 @@ final class BLEManager: NSObject, ObservableObject {
     }
 
     func stopScan() {
+        if isDemoMode {
+            isScanning = false
+            return
+        }
+
         scanStopWorkItem?.cancel()
         scanStopWorkItem = nil
         if isScanning {
@@ -125,6 +168,23 @@ final class BLEManager: NSObject, ObservableObject {
     }
 
     func connect(to id: UUID, macAddress: String) {
+        if isDemoMode {
+            do {
+                let bestAddress = systemMACAddress(for: id)
+                    ?? preferredMACCandidate(for: id)?.address
+                    ?? macAddress
+                activeMACAddress = try saveMACAddress(bestAddress, for: id)
+            } catch {
+                reportError(error.localizedDescription)
+                return
+            }
+
+            connectedDeviceID = id
+            updatePhase(.ready, for: id)
+            appendDemoAuthenticationLog(for: id)
+            return
+        }
+
         guard let peripheral = peripherals[id] else {
             reportError("设备已离开扫描范围，请刷新后重试。")
             return
@@ -150,6 +210,15 @@ final class BLEManager: NSObject, ObservableObject {
     }
 
     func disconnect() {
+        if isDemoMode {
+            guard let id = connectedDeviceID else { return }
+            updatePhase(.discovered, for: id)
+            appendLog(.system, "已断开 \(devices.first(where: { $0.id == id })?.name ?? "演示车辆")")
+            connectedDeviceID = nil
+            activeMACAddress = nil
+            return
+        }
+
         guard let peripheral = activePeripheral else { return }
         updatePhase(.disconnecting, for: peripheral.identifier)
         appendLog(.system, "正在断开 \(displayName(for: peripheral))")
@@ -192,6 +261,13 @@ final class BLEManager: NSObject, ObservableObject {
     }
 
     private func sendCommand(_ data: Data, label: String) {
+        if isDemoMode {
+            appendLog(.sent, label, data: data)
+            appendLog(.received, "车辆响应", data: Data([0x5A, 0x96, 0x01]))
+            appendLog(.system, "设备返回：操作成功")
+            return
+        }
+
         guard authenticationCompleted, let characteristic = commandWriteCharacteristic else {
             reportError("设备尚未完成认证，不能发送指令。")
             return
@@ -244,6 +320,91 @@ final class BLEManager: NSObject, ObservableObject {
                 characteristic: readWrite
             )
         }
+    }
+
+    private func configureDemoData() {
+        let primaryID = UUID(uuidString: "0DD1768C-BB0D-61D3-1B32-FE98D69F033A")!
+        let secondaryID = UUID(uuidString: "90A4B532-571D-4D54-886E-11D2863C3118")!
+        let readyScreens = ["list", "controls", "logs"]
+        let primaryIsReady = readyScreens.contains(demoScreen ?? "")
+
+        let primaryAdvertisement = BLEAdvertisementSnapshot(
+            localName: "YD5C034643",
+            manufacturerData: Data([
+                0xFF, 0xFF, 0xC1, 0x28, 0x5C, 0x03, 0x46, 0x43,
+                0x25, 0xFF, 0xFF, 0xFF, 0x03, 0xFF,
+            ]),
+            serviceData: [:],
+            txPower: -8,
+            isConnectable: true,
+            solicitedServices: [],
+            overflowServices: []
+        )
+        let secondaryAdvertisement = BLEAdvertisementSnapshot(
+            localName: "YD7A24B109",
+            manufacturerData: Data([0xFF, 0xFF, 0xD8, 0x42, 0x7A, 0x24, 0xB1, 0x09]),
+            serviceData: [:],
+            txPower: -12,
+            isConnectable: true,
+            solicitedServices: [],
+            overflowServices: []
+        )
+
+        devices = [
+            DiscoveredDevice(
+                id: primaryID,
+                name: "YD5C034643",
+                rssi: -42,
+                phase: primaryIsReady ? .ready : .discovered,
+                lastSeen: Date(),
+                advertisedServices: [
+                    YDEbikeProtocol.authenticationService,
+                    YDEbikeProtocol.commandService,
+                ],
+                advertisement: primaryAdvertisement
+            ),
+            DiscoveredDevice(
+                id: secondaryID,
+                name: "YD7A24B109",
+                rssi: -55,
+                phase: .discovered,
+                lastSeen: Date().addingTimeInterval(-1.2),
+                advertisedServices: [YDEbikeProtocol.authenticationService],
+                advertisement: secondaryAdvertisement
+            ),
+        ]
+        logs.removeAll()
+        bluetoothState = "蓝牙已开启"
+        isScanning = false
+        lastError = nil
+        connectedDeviceID = primaryIsReady ? primaryID : nil
+        activeMACAddress = primaryIsReady ? "C1:28:5C:03:46:43" : nil
+
+        appendLog(.system, "蓝牙已开启")
+        appendLog(.system, "扫描结束，发现 2 个匹配设备")
+        if primaryIsReady {
+            appendDemoAuthenticationLog(for: primaryID)
+            appendLog(.sent, "解除动力锁定", data: YDEbikeProtocol.debugPacket())
+            appendLog(.received, "车辆响应", data: Data([0x5A, 0x96, 0x01]))
+            appendLog(.system, "设备返回：操作成功")
+        }
+    }
+
+    private func appendDemoAuthenticationLog(for id: UUID) {
+        let name = devices.first(where: { $0.id == id })?.name ?? "YD 车辆"
+        appendLog(.system, "连接 \(name)，认证 MAC \(activeMACAddress ?? "C1:28:5C:03:46:43")")
+        appendLog(.system, "已连接 \(name)，开始发现 GATT 服务")
+        appendLog(.system, "发现 2 个目标服务")
+        appendLog(.system, "服务已就绪，先订阅认证通知")
+        appendLog(.received, "读取认证挑战值", data: Data([
+            0xE1, 0xCA, 0xC4, 0x2A, 0xB3, 0xFE, 0xF8, 0xC8,
+            0x63, 0x00, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0xDA,
+        ]))
+        appendLog(.sent, "认证响应", data: Data([
+            0xF1, 0xCE, 0xE5, 0x30, 0xE6, 0xB9, 0xF2,
+            0x88, 0xA6, 0x41, 0x05, 0x01, 0x10, 0x55,
+        ]))
+        appendLog(.system, "认证响应已写入，设备可开始调试")
     }
 
     private func scheduleAuthenticationRead(
