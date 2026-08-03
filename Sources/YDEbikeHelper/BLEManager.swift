@@ -157,13 +157,21 @@ final class BLEManager: NSObject, ObservableObject {
     }
 
     func sendDebugCommand() {
-        sendCommand(YDEbikeProtocol.debugPacket(), label: "调试")
+        unlockPower()
     }
 
     func sendRestoreCommand() {
-        sendCommand(YDEbikeProtocol.restorePacket(), label: "还原")
+        restorePowerLock()
+    }
+
+    func unlockPower() {
+        sendCommand(YDEbikeProtocol.debugPacket(), label: "解除动力锁定")
+    }
+
+    func restorePowerLock() {
+        sendCommand(YDEbikeProtocol.restorePacket(), label: "恢复动力锁定")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-            self?.sendCommand(YDEbikeProtocol.volumePacket(level: 4), label: "还原后音量 4")
+            self?.sendCommand(YDEbikeProtocol.volumePacket(level: 4), label: "恢复后音量 4")
         }
     }
 
@@ -492,9 +500,13 @@ extension BLEManager: CBCentralManagerDelegate {
             appendLog(.error, bluetoothState)
         case .unauthorized:
             bluetoothState = "没有蓝牙权限"
+            #if os(iOS)
+            reportError("请在“设置 → 隐私与安全性 → 蓝牙”中允许本应用访问蓝牙。")
+            #else
             reportError("请在“系统设置 → 隐私与安全性 → 蓝牙”中允许本应用访问蓝牙。")
+            #endif
         case .unsupported:
-            bluetoothState = "此 Mac 不支持 BLE"
+            bluetoothState = "此设备不支持 BLE"
             appendLog(.error, bluetoothState)
         case .resetting:
             bluetoothState = "蓝牙正在重置"
@@ -551,7 +563,7 @@ extension BLEManager: CBCentralManagerDelegate {
             updateSystemAddress(systemAddress, for: peripheral.identifier)
             appendLog(
                 .system,
-                "macOS 读取到系统 BDAddress \(systemAddress)，将覆盖广播候选用于认证"
+                "系统读取到 BDAddress \(systemAddress)，将覆盖广播候选用于认证"
             )
         } else {
             appendLog(

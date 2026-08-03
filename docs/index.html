@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="YD E-Bike Helper 是一款运行于 macOS 的雅迪电动车 BLE 蓝牙调试工具，支持设备扫描、认证、调试锁定解除、指令发送和通信日志。">
+  <meta name="description" content="YD E-Bike Helper 是一款雅迪电动车 BLE 蓝牙调试工具，支持设备扫描、认证、动力锁定管理、指令发送和通信日志。">
   <meta name="theme-color" content="#0a1215">
   <meta property="og:type" content="website">
   <meta property="og:title" content="YD E-Bike Helper">
-  <meta property="og:description" content="连接雅迪电动车，完成设备认证，在授权范围内解除控制器调试锁定。">
+  <meta property="og:description" content="连接雅迪电动车，完成设备认证，在授权范围内解除车辆动力锁定。">
   <meta property="og:image" content="https://cbdt-jwt.github.io/yd-ebike-helper/assets/hero-ebike.webp">
   <meta property="og:url" content="https://cbdt-jwt.github.io/yd-ebike-helper/">
   <title>YD E-Bike Helper | 雅迪电动车蓝牙调试工具</title>
@@ -39,7 +39,7 @@
       </a>
 
       <div class="nav-links">
-        <a href="#unlock">解除锁定</a>
+        <a href="#unlock">动力锁定</a>
         <a href="#interface">运行界面</a>
         <a href="#features">功能</a>
       </div>
@@ -55,7 +55,7 @@
     <section class="hero" id="top">
       <div class="hero-copy">
         <p class="eyebrow">macOS 雅迪蓝牙调试工具</p>
-        <h1>认证车辆，解除调试锁定。</h1>
+        <h1>认证车辆，解除动力锁定。</h1>
         <p class="hero-summary">连接雅迪电动车，验证设备身份，让授权车辆恢复可调试状态。</p>
         <div class="hero-actions">
           <a class="button" href="https://github.com/CBDT-JWT/yd-ebike-helper/releases/latest">下载 macOS 版</a>
@@ -72,10 +72,10 @@
     <section class="unlock-section reveal" id="unlock">
       <div class="unlock-intro">
         <h2>解锁发生在认证之后</h2>
-        <p>工具先确认车辆广播信息和 MAC 地址，再完成 GATT 认证，最后向控制器发送调试指令。</p>
+        <p>工具先确认车辆广播信息和 MAC 地址，再完成 GATT 认证，最后向控制器发送动力锁定指令。</p>
       </div>
 
-      <ol class="flow-list" aria-label="车辆调试锁定解除流程">
+      <ol class="flow-list" aria-label="车辆动力锁定解除流程">
         <li>
           <span class="flow-marker">识别</span>
           <div>
@@ -93,13 +93,13 @@
         <li>
           <span class="flow-marker">调试</span>
           <div>
-            <h3>解除限制</h3>
-            <p>认证成功后发送调试指令，让车辆退出受限调试状态。</p>
+            <h3>解除动力锁定</h3>
+            <p>认证成功后发送控制指令，让兼容车辆解除动力锁定。</p>
           </div>
         </li>
       </ol>
 
-      <p class="boundary-note">这里解除的是授权车辆的控制器调试锁定。它不绕过防盗系统，也不替代车辆钥匙。</p>
+      <p class="boundary-note">这里解除的是授权车辆的动力锁定。它不绕过防盗系统，也不替代车辆钥匙。</p>
     </section>
 
     <section class="interface-section reveal" id="interface">
@@ -145,7 +145,7 @@
 
         <article class="feature feature-auth">
           <p class="feature-label">设备认证</p>
-          <h3>认证完成，才发送调试指令</h3>
+          <h3>认证完成，才发送动力锁定指令</h3>
           <p>连接状态与认证阶段清楚可见，避免在链路未就绪时盲目写入。</p>
         </article>
 

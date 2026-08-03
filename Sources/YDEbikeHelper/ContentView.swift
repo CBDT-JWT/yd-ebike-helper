@@ -42,14 +42,14 @@ struct ContentView: View {
             Text(bluetooth.lastError ?? "")
         }
         .confirmationDialog(
-            pendingConfirmation == .debug ? "确认发送调试指令？" : "确认发送还原指令？",
+            pendingConfirmation == .debug ? "确认解除动力锁定？" : "确认恢复动力锁定？",
             isPresented: Binding(
                 get: { pendingConfirmation != nil },
                 set: { if !$0 { pendingConfirmation = nil } }
             ),
             titleVisibility: .visible
         ) {
-            Button(pendingConfirmation == .debug ? "发送调试指令" : "发送还原指令") {
+            Button(pendingConfirmation == .debug ? "解除动力锁定" : "恢复动力锁定") {
                 if pendingConfirmation == .debug {
                     bluetooth.sendDebugCommand()
                 } else {
@@ -61,7 +61,7 @@ struct ContentView: View {
                 pendingConfirmation = nil
             }
         } message: {
-            Text("该指令会修改连接设备的运行参数，请只对你有权调试的设备操作。")
+            Text("请确认车辆属于你或已获授权，并确保车辆完全停稳后再操作。")
         }
         .onChange(of: selectedDeviceID) { id in
             guard let id else {
@@ -371,7 +371,7 @@ struct ContentView: View {
                     Button {
                         pendingConfirmation = .debug
                     } label: {
-                        Label("调试", systemImage: "wrench.and.screwdriver")
+                        Label("解除动力锁定", systemImage: "lock.open")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
@@ -379,7 +379,7 @@ struct ContentView: View {
                     Button {
                         pendingConfirmation = .restore
                     } label: {
-                        Label("还原", systemImage: "arrow.uturn.backward")
+                        Label("恢复动力锁定", systemImage: "lock")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
@@ -402,7 +402,7 @@ struct ContentView: View {
             }
             .padding(8)
         } label: {
-            Label("车辆控制指令", systemImage: "switch.2")
+            Label("动力锁定与车辆设置", systemImage: "switch.2")
         }
     }
 
@@ -497,7 +497,7 @@ struct ContentView: View {
         EmptyStateView(
             title: "选择一个 BLE 设备",
             systemImage: "antenna.radiowaves.left.and.right",
-            description: "从左侧选择 YD 设备以连接、认证并发送调试指令。"
+            description: "从左侧选择 YD 设备以连接、认证并管理动力锁定。"
         )
     }
 

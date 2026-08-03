@@ -1,0 +1,37 @@
+name: Compile iOS Assets
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compile:
+    runs-on: macos-15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Compile app icon catalog
+        run: |
+          mkdir -p build/compiled-assets
+          xcrun actool iOS/Assets.xcassets \
+            --compile build/compiled-assets \
+            --output-format human-readable-text \
+            --notices \
+            --warnings \
+            --output-partial-info-plist build/compiled-assets/assetcatalog_generated_info.plist \
+            --app-icon AppIcon \
+            --development-region zh-Hans \
+            --target-device iphone \
+            --minimum-deployment-target 17.0 \
+            --platform iphoneos \
+            --bundle-identifier io.github.cbdtjwt.ydebikehelper.ios
+
+      - name: Upload compiled assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: yd-ebike-helper-ios-assets
+          path: build/compiled-assets
+          if-no-files-found: error

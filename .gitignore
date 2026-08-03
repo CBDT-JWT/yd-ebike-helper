@@ -3,5 +3,7 @@
 .swiftpm/
 .playwright-cli/
 DerivedData/
+xcuserdata/
+*.xcuserstate
 dist/
 output/
